@@ -12,26 +12,20 @@ The membership page offers Free, Plus ($9/month), and Studio ($19/month), plus t
 
 ## Run locally
 
-From the extracted `sidewave` folder:
-
-```sh
-docker compose up --build
-```
-
-Open [http://localhost:3000](http://localhost:3000) and create an account. The default Compose stack binds Sidewave to the local machine and keeps MongoDB on a container-only network. Its named volume persists your accounts, posts, photos, and settings. `docker compose down` stops the stack and preserves those records.
-
-For a direct Node.js install, use Node.js 22 or newer and a running MongoDB instance. Copy `.env.example` to `.env`, set `MONGODB_URI`, then run:
+Use Node.js 22.9 or newer. From the repository root:
 
 ```sh
 npm ci
 npm start
 ```
 
-The platform starts with its own MongoDB database, `sidewave`. Accounts and purchases from the earlier classroom project are separate.
+Open [http://localhost:3000](http://localhost:3000) and create an account. Sidewave starts a local MongoDB instance automatically. The first start needs internet access to download MongoDB. Accounts, posts, photos, and settings are stored in `.sidewave-data/` and survive restarts. Press Ctrl+C to stop Sidewave.
+
+For an existing MongoDB instance, copy `.env.example` to `.env` and set `MONGODB_URI`. The default database name is `sidewave`.
 
 ## Deploy
 
-Run the included Docker image on a Node-compatible host. Configure `MONGODB_URI` for a dedicated, authenticated MongoDB deployment and use TLS for the connection. Set `APP_ORIGIN` to the exact public HTTPS origin. Terminate HTTPS at the host's reverse proxy and route it to the app port. Keep `MONGODB_URI` and Stripe values in the host's secret settings. Database credentials belong to an account with access to the Sidewave database.
+On a Node.js 22.9 or newer host, install with `npm ci --omit=dev` and run `npm start`. Configure `MONGODB_URI` for a dedicated, authenticated MongoDB deployment and use TLS for the connection. Set `APP_ORIGIN` to the exact public HTTPS origin, and set `BIND_HOST` to the address your host expects. Terminate HTTPS at the host's reverse proxy and route it to the app port. Keep `MONGODB_URI` and Stripe values in the host's secret settings. Database credentials belong to an account with access to the Sidewave database.
 
 ## Enable Stripe Checkout
 
@@ -59,10 +53,10 @@ The software includes username and password sign-in. Email-based account recover
 
 ```sh
 npm run check
-MONGODB_TEST_URI='mongodb://127.0.0.1:27017/?replicaSet=rs0' npm test
+npm test
 ```
 
-Use a test replica set. The suite creates disposable databases and exercises actual sharing, photo uploads, account boundaries, playback, and purchase fulfillment. Billing checks use signed test events and a local Stripe service fixture.
+The suite starts a temporary MongoDB replica set and exercises sharing, photo uploads, account boundaries, playback, and purchase fulfillment. Billing checks use signed test events and a local Stripe service fixture. Set `MONGODB_TEST_URI` to use an existing test replica set.
 
 ## Media
 

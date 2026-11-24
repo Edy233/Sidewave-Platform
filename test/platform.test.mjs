@@ -3,18 +3,26 @@ import { randomUUID } from 'node:crypto';
 import { once } from 'node:events';
 import { readFile } from 'node:fs/promises';
 import { createServer } from 'node:net';
-import test from 'node:test';
+import test, { after, before } from 'node:test';
 import { MongoClient } from 'mongodb';
+import { MongoMemoryReplSet } from 'mongodb-memory-server-core';
 import sharp from 'sharp';
 import Stripe from 'stripe';
 import { createApp } from '../server.mjs';
 import { canPlay, plans, tracks } from '../dist/content.js';
 
-const uri = process.env.MONGODB_TEST_URI;
+const externalUri = process.env.MONGODB_TEST_URI;
 const range = { Range: 'bytes=0-255' };
 const password = 'fixture-passphrase-only-2026';
+let testMongo;
+
+before(async () => {
+  if (!externalUri) testMongo = await MongoMemoryReplSet.create();
+});
+after(async () => { await testMongo?.stop(); });
 
 async function serverFor(t, stripeConfig) {
+  const uri = externalUri || testMongo.getUri();
   const database = 'sidewave_test_' + randomUUID().replaceAll('-', '');
   const temporary = createServer().listen(0, '127.0.0.1');
   await once(temporary, 'listening');
@@ -64,7 +72,7 @@ test('the three tiers and audio entitlements use the product catalog', () => {
   assert.equal(canPlay({ plan: 'free', unlocked: [tracks[1].id] }, tracks[1]), true);
 });
 
-test('signed-in users share real posts and photos with approved connections', { skip: !uri }, async t => {
+test('signed-in users share real posts and photos with approved connections', async t => {
   const { browser } = await serverFor(t);
   const guest = browser();
   const author = asUser(browser, await guest('/api/signup', { name: 'Test Author', username: 'test_author', password }));
@@ -113,7 +121,7 @@ test('signed-in users share real posts and photos with approved connections', { 
   await returned('/api/checkout', { id: 'credits25' }, 503);
 });
 
-test('signed billing events reconcile once and a credit unlock survives a plan cancellation', { skip: !uri }, async t => {
+test('signed billing events reconcile once and a credit unlock survives a plan cancellation', async t => {
   const sdk = new Stripe('sk_test_fixture_value');
   const secret = 'whsec_fixture_value';
   const prices = { credits25: 'price_pack25', credits100: 'price_pack100', credits250: 'price_pack250', plus: 'price_plus', studio: 'price_studio' };

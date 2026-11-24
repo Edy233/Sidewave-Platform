@@ -1,6 +1,7 @@
 import { createServer } from 'node:http';
 import { createHash, randomBytes, randomUUID, scrypt, timingSafeEqual } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
+import { once } from 'node:events';
+import { mkdir, readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { MongoClient } from 'mongodb';
@@ -485,8 +486,47 @@ export async function createApp({ mongoUri, database = 'sidewave', appOrigin = '
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const port = Number(process.env.PORT ?? 3000);
-  const app = await createApp({ mongoUri: process.env.MONGODB_URI, database: process.env.MONGODB_DATABASE,
-    appOrigin: process.env.APP_ORIGIN ?? 'http://localhost:' + port, stripeConfig: billingFromEnv() });
-  app.server.listen(port, process.env.BIND_HOST ?? '127.0.0.1', () => console.log('Sidewave is listening on port ' + port));
-  for (const signal of ['SIGINT', 'SIGTERM']) process.once(signal, async () => { await app.close(); });
+  const stripeConfig = billingFromEnv();
+  let app;
+  let localMongo;
+
+  async function close() {
+    try {
+      await app?.close();
+    } finally {
+      await localMongo?.stop({ doCleanup: false });
+    }
+  }
+
+  try {
+    let mongoUri = process.env.MONGODB_URI;
+    if (!mongoUri) {
+      if (stripeConfig) throw new Error('Set MONGODB_URI to a MongoDB replica set or Atlas to enable Stripe.');
+      const dbPath = fileURLToPath(new URL('./.sidewave-data/', import.meta.url));
+      await mkdir(dbPath, { recursive: true, mode: 0o700 });
+      const { MongoMemoryServer } = await import('mongodb-memory-server-core');
+      console.log('Starting local MongoDB (the first run may download MongoDB).');
+      localMongo = await MongoMemoryServer.create({ instance: { dbPath, ip: '127.0.0.1', storageEngine: 'wiredTiger' } });
+      mongoUri = localMongo.getUri();
+    }
+
+    app = await createApp({ mongoUri, database: process.env.MONGODB_DATABASE,
+      appOrigin: process.env.APP_ORIGIN ?? 'http://localhost:' + port, stripeConfig });
+    app.server.listen(port, process.env.BIND_HOST ?? '127.0.0.1');
+    await once(app.server, 'listening');
+  } catch (error) {
+    await close();
+    throw error;
+  }
+
+  let closing;
+  for (const signal of ['SIGINT', 'SIGTERM']) {
+    process.once(signal, () => {
+      closing ??= close().catch(error => {
+        console.error('Sidewave shutdown failed:', error.message);
+        process.exitCode = 1;
+      });
+    });
+  }
+  console.log('Sidewave is listening on port ' + app.server.address().port);
 }

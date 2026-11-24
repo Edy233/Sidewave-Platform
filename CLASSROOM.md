@@ -6,7 +6,7 @@ Build a feature in a Sidewave fork, swap commit links with another team, and rev
 
 1. Create a class GitHub repository from the extracted `sidewave` folder. Commit the full project, including `.env.example` and the lockfile. Tag the starting commit `class-baseline` and give every team its URL.
 2. Give each team access to the baseline and its assigned partner repo. Use private forks if the class organization's policy permits them. Otherwise, create a private repository per team with the same baseline commit. Confirm teams can read the assigned repositories and submit reports privately. [GitHub organization fork settings](https://docs.github.com/en/organizations/managing-organization-settings/managing-the-forking-policy-for-your-organization) · [GitHub repository access](https://docs.github.com/en/repositories/creating-and-managing-repositories/access-to-repositories)
-3. Have teams run review copies in disposable class environments with fresh MongoDB volumes, synthetic users and content, and test billing fixtures. Limit the review to the assigned commit and its local Sidewave instance.
+3. Have teams run review copies in disposable class environments with separate local databases, synthetic users and content, and test billing fixtures. Limit the review to the assigned commit and its local Sidewave instance.
 
 ## Round 1 · Build and submit
 
@@ -24,13 +24,14 @@ Submit one commit SHA with the handoff below. Assignments are graded on the feat
 
 Create a local checkout of your partner's submitted commit. Read the diff from `class-baseline` and trace one feature from the UI to the server and database. Compare the implementation against the rule in the handoff. Use the app's normal controls and test accounts to check both permitted and denied behavior. Document any confirmed mismatch, its impact, and where enforcement belongs.
 
-To keep your own fork and your review copy running at the same time, launch the review copy with a separate Compose project and port:
+To keep your own fork and your review copy running at the same time, create a `.env` file in the review checkout with `PORT=3001`. Then run these commands from the review checkout:
 
 ```sh
-SIDEWAVE_PORT=3001 docker compose --project-name sidewave-review up --build
+npm ci
+npm start
 ```
 
-Open [http://localhost:3001](http://localhost:3001) in a separate browser profile. The Compose project name gives the review copy a separate database volume. The browser profile keeps its accounts and cookies separate. Stop the review copy with `docker compose --project-name sidewave-review down`.
+Open [http://localhost:3001](http://localhost:3001) in a separate browser profile. Each checkout has its own `.sidewave-data/` directory. The browser profile keeps its accounts and cookies separate. Press Ctrl+C to stop the review copy.
 
 Send the report privately to your partner team and instructor. If the checked properties hold, submit the evidence for a passed review instead of inventing a finding.
 
@@ -38,7 +39,7 @@ Send the report privately to your partner team and instructor. If the checked pr
 
 Review the partner's evidence. For a confirmed finding, write or adopt a regression test that states the intended restriction, patch the server-side enforcement, and verify that legitimate use still works. Submit the fix commit and test result. If the checked property already holds, cite the evidence and document an additional meaningful boundary test.
 
-Use `npm run check` for syntax and `npm test` for the test suite. Set `MONGODB_TEST_URI` to a disposable replica set to include the persistence and billing tests. The [README](README.md#verify) shows the full command.
+Use `npm run check` for syntax and `npm test` for the full test suite. The suite starts a temporary replica set by default. See the [README](README.md#verify) for details.
 
 ## Handoff form
 
