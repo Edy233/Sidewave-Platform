@@ -1,0 +1,13 @@
+{
+  "name": "sidewave",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "start": "node --env-file-if-exists=.env server.mjs",
+    "test": "node --env-file-if-exists=.env --test",
+    "check": "node --check server.mjs && node --check billing.mjs && node --check dist/app.js && node --check dist/content.js"
+  },
+  "dependencies": { "mongodb": "^6.21.0", "sharp": "^0.34.5", "stripe": "^20.0.0" }
+}

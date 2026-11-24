@@ -1,0 +1,32 @@
+services:
+  app:
+    build: .
+    environment:
+      MONGODB_URI: mongodb://database:27017
+      MONGODB_DATABASE: sidewave
+      APP_ORIGIN: "http://localhost:${SIDEWAVE_PORT:-3000}"
+    ports:
+      - "127.0.0.1:${SIDEWAVE_PORT:-3000}:3000"
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - web
+      - data
+  database:
+    image: mongo:7.0
+    volumes:
+      - sidewave-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    networks:
+      - data
+networks:
+  web:
+  data:
+    internal: true
+volumes:
+  sidewave-data:
