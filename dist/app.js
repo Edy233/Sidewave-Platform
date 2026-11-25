@@ -1,7 +1,7 @@
 import { canPlay, collection, creditPacks, eligible, features, plans, tracks } from './content.js';
 
 const icons = {
-  logo: '<path d="M3 15c2.1 0 2.1-6 4.4-6 2.4 0 2.1 8 4.6 8s2.4-10 4.6-10c2 0 2.1 6 4.4 6"/>',
+  logo: '<path fill="currentColor" stroke="none" d="M3 17c2 0 3-1 3-3 0-1 0.3-2 0.9-2.6 0.7-0.7 1.6-1.1 2.6-1.1 1.4 0 2.6 0.6 3.5 1.6s1.6 2.1 1.6 3.5c0 1.8-1.4 3.2-3.2 3.2-1.8 0-3.2-1.4-3.2-3.2S11 13.8 13 13.8c1 0 1.9 0.4 2.5 1 0.5-0.4 1.1-0.7 1.8-0.7 1.3 0 2.4 0.7 3.1 1.7 0.1-0.1 0.3-0.2 0.5-0.2 0.7 0 1.2 0.6 1.2 1.3s-0.6 1.3-1.3 1.3H3c-0.7 0-1.3-0.6-1.3-1.3S2.3 17 3 17z"/>',
   home: '<path d="m3 10 9-7 9 7v10H3zm6 10v-7h6v7"/>',
   people: '<circle cx="9" cy="8" r="3"/><path d="M3 21v-2c0-3 2-5 5-5h2c3 0 5 2 5 5v2m2-16a3 3 0 0 1 0 6m1 3c2 0 3 2 3 5"/>',
   photo: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.5"/><path d="m21 17-6-6-8 9"/>',
@@ -66,7 +66,8 @@ async function api(path, body) {
 }
 
 function button(label, action, type = '', glyph = '', attrs = '') {
-  return `<button type="button" class="button ${type}" data-action="${action}" ${attrs}>${glyph ? icon(glyph) : ''}${label}</button>`;
+  const primary = type.includes('primary') ? ' style="background:#ff5500;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-weight:600"' : '';
+  return `<button type="button" class="button ${type}" data-action="${action}"${primary} ${attrs}>${glyph ? icon(glyph) : ''}${label}</button>`;
 }
 
 function link(label, route, type = '', glyph = '') {
@@ -93,34 +94,36 @@ function render() {
   const focusedAction = layout.contains(document.activeElement) && document.activeElement.dataset.action;
   const route = page();
   const pages = { home, community, photos, music, billing, account, member, search };
-  const body = state.connecting ? '<section class="panel"><p role="status">Connecting to Sidewave…</p></section>'
+  const body = state.connecting ? '<section class="panel"><p role="status">Connecting to tunecloud…</p></section>'
     : state.failure ? '<section class="panel"><h1>Connection unavailable</h1><p>' + esc(state.failure) + '</p>' + button('Retry', 'retry', 'primary') + '</section>'
-    : state.error ? '<section class="panel"><h1>' + (names[route] || 'Sidewave') + '</h1><p>' + esc(state.error) + '</p>' + button('Retry', 'refresh') + '</section>'
+    : state.error ? '<section class="panel"><h1>' + (names[route] || 'tunecloud') + '</h1><p>' + esc(state.error) + '</p>' + button('Retry', 'refresh') + '</section>'
     : Object.hasOwn(pages, route) ? pages[route]() : home();
-  layout.innerHTML = `<div class="shell">
-    <aside class="sidebar">
-      <a class="logo" href="#home"><span>${icon('logo')}</span>Sidewave</a>
-      <nav aria-label="Main navigation">
-        ${nav('Home', 'home', 'home')}
-        <div class="nav-label">Discover</div>
-        ${nav('Commons', 'community', 'people')}${nav('Stillroom', 'photos', 'photo')}${nav('Lowline', 'music', 'music')}
-        <div class="nav-label">Account</div>
-        ${nav('Membership', 'billing', 'credit')}${nav('Settings', 'account', 'settings')}
-      </nav>
-      <div class="sidebar-bottom">${state.account
-        ? '<a href="#' + userRoute(state.account.username) + '" class="profile-link">' + avatar(state.account.name) + '<span><strong>' + esc(state.account.name) + '</strong><small>@' + esc(state.account.username) + '</small></span></a>'
-        : '<p>Join Sidewave to start posting, saving photos, and connecting with members.</p>' + button('Create account', 'signup', 'primary wide')}</div>
-    </aside>
-    <div class="main-shell">
-      <header class="topbar">
-        <span class="breadcrumb">${names[route] || 'Home'}</span>
-        <form class="search-form" data-form="search">${icon('search')}<input type="search" name="query" aria-label="Search members by username" placeholder="Search members" value="${esc(state.search)}" required></form>
-        <div class="top-actions">${state.account
-          ? '<a class="profile-mini" href="#' + userRoute(state.account.username) + '" aria-label="My profile">' + avatar(state.account.name) + '</a>'
-          : button('Sign in', 'login', 'plain') + button('Join Sidewave', 'signup', 'primary compact')}</div>
-      </header>
-      <main id="content" tabindex="-1">${body}</main>
-    </div></div>`;
+  layout.innerHTML = `<div class="shell" style="display:flex;flex-direction:column;min-height:100vh;background:#fff;color:#111">
+    <header class="topbar" style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid #eaeaea;background:#fff">
+      <a class="logo" href="#home" style="display:flex;align-items:center;gap:8px;color:#ff5500;font-weight:800;text-decoration:none;font-size:20px"><span style="display:inline-block;height:20px">${icon('logo')}</span>tunecloud</a>
+      <form class="search-form" data-form="search" style="display:flex;align-items:center;gap:8px;flex:1;max-width:560px;margin:0 24px">${icon('search')}<input type="search" name="query" aria-label="Search members, tracks, and photos" placeholder="Search" style="flex:1;padding:7px 14px;border:1px solid #eaeaea;border-radius:26px;background:#f6f6f6;color:#111" value="${esc(state.search)}" required></form>
+      <div class="top-actions" style="display:flex;align-items:center;gap:10px">${state.account
+        ? '<a href="#' + userRoute(state.account.username) + '" class="profile-mini" aria-label="My profile" style="display:flex;align-items:center;gap:8px;color:#ff5500;text-decoration:none;font-weight:600;font-size:14px">' + avatar(state.account.name) + '<span>' + esc(state.account.name) + '</span></a>'
+        : button('Sign in', 'login', 'plain') + button('Join tunecloud', 'signup', 'primary')}</div>
+    </header>
+    <div class="body" style="display:flex;flex:1">
+      <aside class="sidebar" style="width:280px;border-right:1px solid #eaeaea;background:#fff;overflow:auto">
+        <nav aria-label="Main navigation" style="padding:16px">
+          ${nav('Home', 'home', 'home')}
+          <div class="nav-label" style="font-size:11px;letter-spacing:0.1em;color:#666;margin:14px 8px 6px;text-transform:uppercase">Discover</div>
+          ${nav('Commons', 'community', 'people')}${nav('Stillroom', 'photos', 'photo')}${nav('Lowline', 'music', 'music')}
+          <div class="nav-label" style="font-size:11px;letter-spacing:0.1em;color:#666;margin:18px 8px 6px;text-transform:uppercase">Account</div>
+          ${nav('Membership', 'billing', 'credit')}${nav('Settings', 'account', 'settings')}
+        </nav>
+        <div class="sidebar-bottom" style="padding:16px">${state.account
+          ? '<a href="#' + userRoute(state.account.username) + '" class="profile-link" style="display:flex;align-items:center;gap:8px;color:#111;text-decoration:none">' + avatar(state.account.name) + '<span><strong>' + esc(state.account.name) + '</strong><small style="color:#666">@' + esc(state.account.username) + '</small></span></a>'
+          : '<p style="color:#111;margin:0 0 10px">Join tunecloud to start posting, saving photos, and connecting with members.</p>' + button('Create account', 'signup', 'primary wide')}</div>
+      </aside>
+      <div class="main-shell" style="flex:1;padding:24px;overflow:auto;background:#fff">
+        <main id="content" tabindex="-1">${body}</main>
+      </div>
+    </div>
+  </div>`;
   if (focusedAction) [...layout.querySelectorAll('[data-action]')].find(element => element.dataset.action === focusedAction)?.focus({ preventScroll: true });
 }
 
@@ -144,7 +147,7 @@ function home() {
       ${featured()}
       <section>${titleRow('From the community', link('Open Commons', 'community', 'text'))}
         ${state.data?.feed?.items.length ? state.data.feed.items.slice(0, 2).map(post).join('') :
-          `<article class="panel empty"><div class="feature-icon lilac">${icon('people')}</div><div><h3>Start a conversation</h3><p>Share something with the Sidewave community.</p></div>${link('Open feed', 'community', 'secondary')}</article>`}
+          `<article class="panel empty"><div class="feature-icon lilac">${icon('people')}</div><div><h3>Start a conversation</h3><p>Share something with the tunecloud community.</p></div>${link('Open feed', 'community', 'secondary')}</article>`}
       </section>
       <section>${titleRow('Field Notes', link('Open Stillroom', 'photos', 'text'))}<div class="photo-grid small-grid">${collection.map(photo => photoCard(photo, true)).join('')}</div></section>
     </div>
@@ -154,7 +157,7 @@ function home() {
         ${tracks.map(track => trackRow(track, true)).join('')}
       </section>
       <section class="panel explorer">
-        <h2>Explore Sidewave</h2>
+        <h2>Explore tunecloud</h2>
         <a href="#community"><span class="feature-icon lilac">${icon('people')}</span><span><strong>Commons</strong><small>Posts and member profiles</small></span></a>
         <a href="#photos"><span class="feature-icon sage">${icon('photo')}</span><span><strong>Stillroom</strong><small>Photos and collections</small></span></a>
         <a href="#music"><span class="feature-icon peach">${icon('music')}</span><span><strong>Lowline</strong><small>Original tracks and previews</small></span></a>
@@ -218,7 +221,7 @@ function trackRow(track, compact = false) {
 }
 
 function music() {
-  return heading('Lowline', 'Original recordings from the Sidewave catalog.')
+  return heading('Lowline', 'Original recordings from the tunecloud catalog.')
     + featured() + '<section class="panel section"><h2>All tracks</h2>' + tracks.map(track => trackRow(track)).join('') + '</section>'
     + (state.account && eligible(state.account.plan, 'plus') && state.account.flags.listeningHistory ? '<section class="section panel"><h2>Listening history</h2>' +
       (state.account.history.length ? state.account.history.map(entry => {
@@ -336,7 +339,7 @@ function auth(mode = 'login') {
     <label class="field">Username<input name="username" required minlength="3" maxlength="24" pattern="[a-zA-Z0-9][a-zA-Z0-9_\\-]{2,23}" autocomplete="username" autocapitalize="off"></label>
     <label class="field">Password<input name="password" type="password" maxlength="128" ${create ? 'minlength="12" autocomplete="new-password" placeholder="At least 12 characters"' : 'autocomplete="current-password"'} required></label>
     <p class="error" data-error role="alert" hidden></p><button class="button primary wide">${create ? 'Create account' : 'Sign in'}</button>
-    </form><div class="form-end">${create ? button('Already a member? Sign in', 'login', 'text') : button('New to Sidewave? Create an account', 'signup', 'text')}</div>`);
+    </form><div class="form-end">${create ? button('Already a member? Sign in', 'login', 'text')     : button('New to tunecloud? Create an account', 'signup', 'text')}</div>`);
 }
 
 function openPhoto(id) {
@@ -491,7 +494,7 @@ async function submit(form) {
   if (kind === 'login' || kind === 'signup') {
     ({ account: state.account } = await api(kind, Object.fromEntries(data)));
     dialog.close();
-    flash(kind === 'signup' ? 'Welcome to Sidewave.' : 'Signed in.');
+    flash(kind === 'signup' ? 'Welcome to tunecloud.' : 'Signed in.');
   }
   if (kind === 'post') { await api('posts', Object.fromEntries(data)); flash('Post published.'); }
   if (kind === 'settings') { ({ account: state.account } = await api('settings', Object.fromEntries(data))); flash('Profile saved.'); }
@@ -569,7 +572,7 @@ async function init() {
       history.replaceState(null, '', '/#billing');
       flash('Welcome back. Your purchase will appear after payment confirmation.');
     }
-  } catch { state.failure = 'Sidewave could not connect to its server.'; }
+  } catch { state.failure = 'tunecloud could not connect to its server.'; }
   state.connecting = false;
   if (state.failure) render();
   else await refresh();
